@@ -1,3 +1,14 @@
+/******************************************************************************
+* File:             gpu.cu
+*
+* Author:           Andy Belle-Isle  
+* Created:          12/01/21 
+* Description:      GPU (CUDA) host and device code for finding prime numbers
+*                   using Miller-Rabin primality testing
+*
+* Email:            atb1317@rit.edu
+*****************************************************************************/
+
 #include "bignum.hpp"
 #include "bignum_prime.hpp"
 

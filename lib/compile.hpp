@@ -1,3 +1,14 @@
+/******************************************************************************
+* File:             compile.hpp
+*
+* Author:           Andy Belle-Isle  
+* Created:          11/28/21 
+* Description:      Multi-precision arithmetic library compile header. This
+*                   header is used to allow for cross-compiler compilation. When
+*                   this header is included the same code can be compiled with
+*                   both NVCC and GCC even when no NVCC compiler is present.
+*****************************************************************************/
+
 #pragma once
 
 #if defined(__CUDACC__)

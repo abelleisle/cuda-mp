@@ -1,3 +1,13 @@
+/******************************************************************************
+* File:             bignum_prime.hpp
+*
+* Author:           Andy Belle-Isle  
+* Created:          12/01/21 
+* Description:      Prime finding implementations for multi-precision numbers
+*
+* Email:            atb1317@rit.edu
+*****************************************************************************/
+
 #pragma once
 
 #include "bignum.hpp"
@@ -155,6 +165,7 @@ FNC_D bool mr_bignum(bignum *p, int k, bignum_stack *s)
     // TODO: put this back
     // sync();
 
+    // TODO: fix this, return false's don't reset the stack
     s->sp -= 5;
 
     return true;

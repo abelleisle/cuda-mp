@@ -1,3 +1,13 @@
+/******************************************************************************
+* File:             bignum_types.hpp
+*
+* Author:           Andy Belle-Isle  
+* Created:          12/02/21 
+* Description:      Multiprecision type and namespace declarations
+*
+* Email:            atb1317@rit.edu
+*****************************************************************************/
+
 #pragma once
 
 namespace bn {

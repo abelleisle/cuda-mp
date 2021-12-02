@@ -1,3 +1,13 @@
+/******************************************************************************
+* File:             bignum.hpp
+*
+* Author:           Andy Belle-Isle  
+* Created:          11/28/21 
+* Description:      Multi-precision arithmetic library
+*
+* Email:            atb1317@rit.edu
+*****************************************************************************/
+
 #pragma once
 
 #include <stdio.h>

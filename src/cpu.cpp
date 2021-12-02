@@ -1,13 +1,20 @@
+/******************************************************************************
+* File:             cpu.cpp
+*
+* Author:           Andy Belle-Isle
+* Created:          11/30/21 
+* Description:      CPU "device" code to find large prime numbers using both
+*                   Miller-Rabin and standard prime finding techniques.
+*
+* Email:            atb1317@rit.edu
+*****************************************************************************/
+
 #include "bignum.hpp"
 #include "bignum_prime.hpp"
 
 #include <cstring>
 
 #include <array>
-
-//const int count = 12800;
-
-//std::array<bignum, count> primes;
 
 int main(void)
 {
