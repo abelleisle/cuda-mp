@@ -1,4 +1,5 @@
 #include "bignum.hpp"
+#include "bignum_prime.hpp"
 
 #include <array>
 

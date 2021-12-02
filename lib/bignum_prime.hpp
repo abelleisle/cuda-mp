@@ -60,3 +60,102 @@ FNC_D bool prime_bignum(bignum *p, bignum_stack *s)
 
     return true;
 }
+
+FNC_D bool mr_bignum(bignum *p, int k, bignum_stack *s)
+{
+    /* Even or negative - Not prime */
+    if (even_bignum(p) || p->signbit == MINUS)
+        return false;
+
+    bignum *i = &s->data[s->sp++];
+
+    /* If p <= 1 - Not prime */
+    int_to_bignum(1, i);
+    if (compare_bignum(p, i) >= 0)
+        return false;
+
+    /* If p == 2 - Prime */
+    int_to_bignum(2, i);
+    if (compare_bignum(p, i) == 0)
+        return true;
+
+    /* If p == 3 - Prime */
+    int_to_bignum(3, i);
+    if (compare_bignum(p, i) == 0)
+        return true;
+
+    int_to_bignum(0, i);
+    
+    // d = n - 1
+    bignum *d = &s->data[s->sp++];
+    *d = *p;
+    add_i(d, -1, s);
+
+    sync();
+
+    /* Factoring out 2 from d */
+    int c = 0;
+    while(true) {
+        if (!even_bignum(d))
+            break;
+
+        c++;
+        rightshift_bignum(d, 1);
+        sync();
+    }
+
+    bignum *a = &s->data[s->sp++];
+    bignum *r = &s->data[s->sp++];
+    bignum *two = &s->data[s->sp++];
+    int_to_bignum(2, two);
+
+    for (int j = 0; j < k; j++) {
+        /* Generate random from 2 to p-2 */
+        rand_digits_bignum(a, p->lastdigit+1);
+        add_i(a, 2, s);
+        add_i(p, -2, s);
+        mod_bignum(a,p,r,s);
+        add_i(p, 2, s);
+        *a = *r;
+        sync();
+
+        // If remainder == 1
+        int_to_bignum(1, i);
+        powmod_bignum(r, a, d, p, s);
+        if (compare_bignum(i,r) == 0) {
+            continue;
+        }
+        sync();
+
+        // If remainder == p-1
+        *i = *p;
+        add_i(i, -1, s);
+        if (compare_bignum(i,r) == 0) {
+            continue;
+        }
+        sync();
+
+        for (int g = 1; g <= c - 1; g++) {
+            *i = *r;
+            powmod_bignum(r, i, two, p, s);
+            int_to_bignum(1, i);
+            if (compare_bignum(i, r) == 0)
+                return false;
+
+            *i = *p;
+            add_i(i, -1, s);
+            if (compare_bignum(i, r) == 0)
+                goto NEXTTRY;
+        }
+
+        return false;
+    NEXTTRY:
+        continue;
+    } 
+    // TODO: put this back
+    // sync();
+
+    s->sp -= 5;
+
+    return true;
+}
