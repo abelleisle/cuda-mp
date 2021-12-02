@@ -364,3 +364,34 @@ FNC_DH void rightshift_bignum(bignum *a, unsigned n)
         zero_justify(a);
     }
 }
+
+/** @brief result = base^exp
+ */
+FNC_DH void pow_bignum(bignum *result, bignum *base, bignum *exp, bignum_stack *s)
+{
+    bignum *b = &s->data[s->sp++];
+    bignum *i = &s->data[s->sp++];
+
+    *b = *base;
+    int_to_bignum(1, i);
+
+    // If exp < 1
+    if (compare_bignum(exp, i) > 0) {
+        int_to_bignum(1, result);
+
+    } else {
+        *result = *base;
+
+        // While i <= base
+        while (compare_bignum(i, exp) > 0) {
+            multiply_bignum(b, base, result, s);
+            *b = *result;
+            add_i(i, 1, s);
+        }
+    }
+
+    zero_justify(result);
+
+    s->sp -= 2;
+}
+
