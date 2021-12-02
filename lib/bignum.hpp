@@ -395,3 +395,18 @@ FNC_DH void pow_bignum(bignum *result, bignum *base, bignum *exp, bignum_stack *
     s->sp -= 2;
 }
 
+/** @brief result = base^exp % mod
+ */
+FNC_DH void powmod_bignum(bignum *result, bignum *base, bignum *exp, bignum *mod, bignum_stack *s)
+{
+    bignum *r = &s->data[s->sp++];
+
+    pow_bignum(result, base, exp, s);
+
+    *r = *result;
+    mod_bignum(r, mod, result, s);
+
+    zero_justify(result);
+
+    s->sp -= 1;
+}
