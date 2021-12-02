@@ -408,6 +408,7 @@ FNC_DH void pow_bignum(bignum *result, bignum *base, bignum *exp, bignum_stack *
 }
 
 /** @brief result = base^exp % mod
+ * Uses right-to-left binary exponentiation for a code speedup.
  */
 FNC_DH void powmod_bignum(bignum *result, bignum *base, bignum *exp, bignum *mod, bignum_stack *s)
 {
