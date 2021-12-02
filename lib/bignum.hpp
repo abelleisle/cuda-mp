@@ -350,3 +350,17 @@ FNC_H void rand_digits_bignum(bignum *a, unsigned digits)
 
     zero_justify(a);
 }
+
+FNC_DH void rightshift_bignum(bignum *a, unsigned n)
+{
+    unsigned tmp,carry = 0;
+    while (n--) {
+        for (int i = a->lastdigit; i >= 0; i--) {
+            tmp = (a->digits[i] + carry) >> 1;
+            carry = (a->digits[i] & 1) * 10;
+
+            a->digits[i] = tmp % 10;
+        }
+        zero_justify(a);
+    }
+}
