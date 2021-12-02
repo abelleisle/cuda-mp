@@ -399,6 +399,7 @@ FNC_DH void pow_bignum(bignum *result, bignum *base, bignum *exp, bignum_stack *
  */
 FNC_DH void powmod_bignum(bignum *result, bignum *base, bignum *exp, bignum *mod, bignum_stack *s)
 {
+    /*
     bignum *r = &s->data[s->sp++];
 
     pow_bignum(result, base, exp, s);
@@ -409,4 +410,27 @@ FNC_DH void powmod_bignum(bignum *result, bignum *base, bignum *exp, bignum *mod
     zero_justify(result);
 
     s->sp -= 1;
+    */
+
+    bignum *i = &s->data[s->sp++];
+    bignum *zero = &s->data[s->sp++];
+
+    initialize_bignum(zero); // zero = 0
+
+    int_to_bignum(1, result);
+    while (compare_bignum(exp,zero) != 0) {
+        if (!even_bignum(exp)) {
+            multiply_bignum(base, result, i, s);
+            mod_bignum(i, mod, result, s);
+        }
+
+        multiply_bignum(base, base, i, s);
+        mod_bignum(i, mod, base, s);
+
+        rightshift_bignum(exp, 1);
+    }
+
+    zero_justify(result);
+
+    s->sp -= 2;
 }
