@@ -1,3 +1,5 @@
+#pragma once
+
 #include "bignum.hpp"
 #include "compile.hpp"
 
