@@ -71,102 +71,161 @@ FNC_D bool prime_bignum(bignum *p, bignum_stack *s)
     return true;
 }
 
-FNC_D bool mr_bignum(bignum *p, int k, bignum_stack *s)
+/*******************************************************************************
+*                                MILLER-RABIN                                  *
+*******************************************************************************/
+
+FNC_D int mr_bignum_factor(bignum *p, bignum *d_ret, int *c_ret, bignum_stack *s)
 {
     /* Even or negative - Not prime */
     if (even_bignum(p) || p->signbit == MINUS)
-        return false;
-
-    bignum *i = &s->data[s->sp++];
+        return -1;
 
     /* If p <= 1 - Not prime */
-    int_to_bignum(1, i);
-    if (compare_bignum(p, i) >= 0)
-        return false;
+    int_to_bignum(1, d_ret);
+    if (compare_bignum(p, d_ret) >= 0)
+        return -1;
 
     /* If p == 2 - Prime */
-    int_to_bignum(2, i);
-    if (compare_bignum(p, i) == 0)
-        return true;
+    int_to_bignum(2, d_ret);
+    if (compare_bignum(p, d_ret) == 0)
+        return 1;
 
     /* If p == 3 - Prime */
-    int_to_bignum(3, i);
-    if (compare_bignum(p, i) == 0)
-        return true;
+    int_to_bignum(3, d_ret);
+    if (compare_bignum(p, d_ret) == 0)
+        return 1;
 
-    int_to_bignum(0, i);
+    int_to_bignum(0, d_ret);
     
     // d = n - 1
-    bignum *d = &s->data[s->sp++];
-    *d = *p;
-    add_i(d, -1, s);
+    *d_ret = *p;
+    add_i(d_ret, -1, s);
 
     sync();
 
     /* Factoring out 2 from d */
-    int c = 0;
+    *c_ret = 0;
     while(true) {
-        if (!even_bignum(d))
+        if (!even_bignum(d_ret))
             break;
 
-        c++;
-        rightshift_bignum(d, 1);
+        (*c_ret)++;
+        rightshift_bignum(d_ret, 1);
         sync();
     }
 
-    bignum *a = &s->data[s->sp++];
-    bignum *r = &s->data[s->sp++];
+    return 0; // Regular return
+}
+
+FNC_D void mr_bignum_treatrand(bignum *p, bignum *r, bignum_stack *s)
+{
+    bignum *tmp = &s->data[s->sp++];
+
+    *tmp = *r;
+
+    add_i(p, -4, s);
+    sync();
+    mod_bignum(tmp, p, r, s);
+    sync();
+    add_i(p, 4, s);
+    sync();
+
+    s->sp--;
+}
+
+FNC_D int mr_bignum_innerloop(bignum *p, bignum *d, int c, bignum *r, bignum_stack *s)
+{
+    bool maybe_prime = false;
+
+    bignum *result = &s->data[s->sp++];
+    bignum *tmp_i = &s->data[s->sp++];
     bignum *two = &s->data[s->sp++];
     int_to_bignum(2, two);
 
-    for (int j = 0; j < k; j++) {
-        /* Generate random from 2 to p-2 */
-        rand_digits_bignum(a, p->lastdigit+1);
-        add_i(a, 2, s);
-        add_i(p, -2, s);
-        mod_bignum(a,p,r,s);
-        add_i(p, 2, s);
-        *a = *r;
-        sync();
-
+    if (!maybe_prime) {
         // If remainder == 1
-        int_to_bignum(1, i);
-        powmod_bignum(r, a, d, p, s);
-        if (compare_bignum(i,r) == 0) {
-            continue;
+        int_to_bignum(1, tmp_i);
+        powmod_bignum(result, r, d, p, s);
+        if (compare_bignum(tmp_i,result) == 0) {
+            maybe_prime = true;
         }
-        sync();
+    }
+    sync();
 
+    if (!maybe_prime) {
         // If remainder == p-1
-        *i = *p;
-        add_i(i, -1, s);
-        if (compare_bignum(i,r) == 0) {
-            continue;
+        *tmp_i = *p;
+        add_i(tmp_i, -1, s);
+        if (compare_bignum(tmp_i,result) == 0) {
+            maybe_prime = true;
         }
-        sync();
+    }
+    sync();
 
+    if (!maybe_prime) {
         for (int g = 1; g <= c - 1; g++) {
-            *i = *r;
-            powmod_bignum(r, i, two, p, s);
-            int_to_bignum(1, i);
-            if (compare_bignum(i, r) == 0)
-                return false;
+            *tmp_i = *r;
+            powmod_bignum(result, tmp_i, two, p, s);
+            int_to_bignum(1, tmp_i);
+            if (compare_bignum(tmp_i, result) == 0) {
+                maybe_prime = false; // This is not prime
+                break;
+            }
 
-            *i = *p;
-            add_i(i, -1, s);
-            if (compare_bignum(i, r) == 0)
-                goto NEXTTRY;
+            *tmp_i = *p;
+            add_i(tmp_i, -1, s);
+            if (compare_bignum(tmp_i, result) == 0) {
+                maybe_prime = true;
+                break;
+            }
         }
+    }
+    sync();
 
+    s->sp -= 3;
+
+    if (!maybe_prime)
+        return -1;
+
+    return 1;
+}
+
+FNC_D bool mr_bignum(bignum *p, int k, bignum_stack *s)
+{
+    /* Whether or not to continue searching. 
+     * search = -1 - Number is not a prime
+     * search =  0 - No prime found yet, keep searching
+     * search =  1 - Number is a prime
+     */
+    int maybe_prime = 0;
+
+    int c = 0;
+    bignum *d = &s->data[s->sp++]; // factor of 2
+    bignum *a = &s->data[s->sp++]; // random attempt
+
+    maybe_prime = mr_bignum_factor(p, d, &c, s);
+
+    if (maybe_prime == 0) {
+        for (int j = 0; j < k; j++) {
+            /* Generate random from 2 to p-2 */
+            rand_digits_bignum(a, p->lastdigit+1);
+            mr_bignum_treatrand(p, a, s);
+
+            int maybe_prime = mr_bignum_innerloop(p,d,c,a,s);
+            if (maybe_prime == 1)
+                continue;
+            if (maybe_prime == -1)
+                break;
+        } 
+    }
+
+    sync();
+
+    s->sp -= 2;
+
+    if (maybe_prime >= 0)
+        return true;
+    else
         return false;
-    NEXTTRY:
-        continue;
-    } 
-    // TODO: put this back
-    // sync();
-
-    // TODO: fix this, return false's don't reset the stack
-    s->sp -= 5;
-
-    return true;
 }
