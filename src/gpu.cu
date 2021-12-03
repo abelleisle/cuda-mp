@@ -80,7 +80,7 @@ int main()
     find_primes();
     tp::time_point end = tp::now();
 
-    double duration = std::chrono::duration_cast<std::chrono::microseconds>(end-begin).count();
+    double duration = std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count();
     double seconds = static_cast<double>(duration)/1000.0f;
     std::cout << "Elapsed Time: " << seconds << "s" << std::endl;
 

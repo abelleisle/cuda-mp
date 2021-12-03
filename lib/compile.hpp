@@ -22,6 +22,7 @@
 #define sync() __syncthreads()
 
 #else
+#include <cmath>
 #define FNC_D
 #define FNC_H
 #define FNC_DH
