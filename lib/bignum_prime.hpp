@@ -213,7 +213,7 @@ FNC_D bool mr_bignum(bignum *p, int k, bignum_stack *s)
             rand_digits_bignum(a, p->lastdigit+1);
             mr_bignum_treatrand(p, a, s);
 
-            int maybe_prime = mr_bignum_innerloop(p,d,c,a,s);
+            maybe_prime = mr_bignum_innerloop(p,d,c,a,s);
             if (maybe_prime == 1)
                 continue;
             if (maybe_prime == -1)

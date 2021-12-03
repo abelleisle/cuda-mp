@@ -16,20 +16,31 @@
 
 #include <array>
 
+const unsigned RAND_DIGITS = 30;
+const unsigned PRIMES_NUM = 12800;
+const unsigned BLOCK_SIZE = 32;
+const unsigned MR_TRIALS  = BLOCK_SIZE;
+const unsigned GRID_SIZE  = PRIMES_NUM;
+const unsigned THREADS    = BLOCK_SIZE * GRID_SIZE;
+
+std::array<bignum, GRID_SIZE> local_primes;
+std::array<bignum, THREADS>   mr_trials;
+
 int main(void)
 {
     srand(time(NULL));
 
+    /* Fill our random prime searches */
+    std::cout << "Generating prime attempts..." << std::endl;
+    for (auto &r : local_primes)
+        rand_digits_bignum(&r, RAND_DIGITS);
+
     bignum_stack stack;
 
-    bignum p;
-    rand_digits_bignum(&p, 308);
-
-    print_bignum(&p);
-    if (mr_bignum(&p, 32, &stack)) {
-        std::cout << "Number is prime" << std::endl;
-    } else {
-        std::cout << "Not prime" << std::endl;
+    for (auto &r : local_primes) {
+        if (mr_bignum(&r, 32, &stack)) {
+            print_bignum(&r);
+        }
     }
 
     /*

@@ -15,7 +15,8 @@
 *                                 GLOBALS                                     *
 ******************************************************************************/
 
-const unsigned PRIMES_NUM = 128;
+const unsigned RAND_DIGITS = 30;
+const unsigned PRIMES_NUM = 12800;
 const unsigned BLOCK_SIZE = 32;
 const unsigned MR_TRIALS  = BLOCK_SIZE;
 const unsigned GRID_SIZE  = PRIMES_NUM;
@@ -175,12 +176,12 @@ bool find_primes(void)
     /* Fill our random prime searches */
     std::cout << "Generating prime attempts..." << std::endl;
     for (auto &r : local_primes)
-        rand_digits_bignum(&r, 155);
+        rand_digits_bignum(&r, RAND_DIGITS);
 
     /* Fill our random trials */
     std::cout << "Generating prime trials..." << std::endl;
     for (auto &t : mr_trials)
-        rand_digits_bignum(&t, 155);
+        rand_digits_bignum(&t, RAND_DIGITS);
 
     /***********************
     * ALLOCATE CUDA MEMORY *
