@@ -15,9 +15,9 @@
 
 #include "compile.hpp"
 
-#define	MAXDIGITS	617    /* maximum length bignum */ 
-//#define	MAXDIGITS	1235    /* maximum length bignum */ 
-#define STACKDEPTH  12     /* How deep our bignum stack is */
+//#define	MAXDIGITS	617    /* maximum length bignum */ 
+#define	MAXDIGITS	1235    /* maximum length bignum */ 
+#define STACKDEPTH  15     /* How deep our bignum stack is */
 
 #define PLUS		1       /* positive sign bit */
 #define MINUS		-1      /* negative sign bit */

@@ -25,5 +25,5 @@ all: $(CXX_EXEC) $(NVCC_EXEC)
 $(CXX_EXEC): $(CXX_SRCS) $(LIB_SRCS)
 	$(CXX) $(CXX_FLAGS) $(LIB_FLAGS) $(CXX_SRCS) -o $(CXX_EXEC)
 
-$(NVCC_EXEC): $(NVCC_SRCS) $(LIB_SRCS)
+$(NVCC_EXEC): $(NVCC_SRCS) $(LIB_SRCS) src/prime_kernel.cu
 	$(NVCC) $(NVCC_FLAGS) $(LIB_FLAGS) $(NVCC_SRCS) -o $(NVCC_EXEC)

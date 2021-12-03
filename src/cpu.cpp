@@ -23,7 +23,7 @@ int main(void)
     bignum_stack stack;
 
     bignum p;
-    rand_digits_bignum(&p, 15);
+    rand_digits_bignum(&p, 308);
 
     print_bignum(&p);
     if (mr_bignum(&p, 32, &stack)) {
@@ -31,7 +31,6 @@ int main(void)
     } else {
         std::cout << "Not prime" << std::endl;
     }
-
 
     /*
 
