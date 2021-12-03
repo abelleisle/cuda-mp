@@ -106,10 +106,7 @@ FNC_D int mr_bignum_factor(bignum *p, bignum *d_ret, int *c_ret, bignum_stack *s
 
     /* Factoring out 2 from d */
     *c_ret = 0;
-    while(true) {
-        if (!even_bignum(d_ret))
-            break;
-
+    while(even_bignum(d_ret)) {
         (*c_ret)++;
         rightshift_bignum(d_ret, 1);
         sync();
@@ -120,18 +117,22 @@ FNC_D int mr_bignum_factor(bignum *p, bignum *d_ret, int *c_ret, bignum_stack *s
 
 FNC_D void mr_bignum_treatrand(bignum *p, bignum *r, bignum_stack *s)
 {
-    bignum *tmp = &s->data[s->sp++];
+    bignum *tmp   = &s->data[s->sp++];
+    bignum *tmp_p = &s->data[s->sp++];
 
     *tmp = *r;
+    *tmp_p = *p;
 
-    add_i(p, -4, s);
+    add_i(tmp_p, -4, s);
     sync();
-    mod_bignum(tmp, p, r, s);
+    mod_bignum(tmp, tmp_p, r, s);
     sync();
-    add_i(p, 4, s);
+    add_i(tmp_p, 4, s);
+    sync();
+    add_i(r, 2, s);
     sync();
 
-    s->sp--;
+    s->sp -= 2;
 }
 
 FNC_D int mr_bignum_innerloop(bignum *p, bignum *d, int c, bignum *r, bignum_stack *s)
@@ -186,9 +187,9 @@ FNC_D int mr_bignum_innerloop(bignum *p, bignum *d, int c, bignum *r, bignum_sta
     s->sp -= 3;
 
     if (!maybe_prime)
-        return -1;
+        return -1; // Not prime
 
-    return 1;
+    return 1; // Prime
 }
 
 FNC_D bool mr_bignum(bignum *p, int k, bignum_stack *s)

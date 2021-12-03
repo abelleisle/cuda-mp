@@ -12,66 +12,14 @@
 #include "bignum.hpp"
 #include "bignum_prime.hpp"
 
+#include "prime_kernel.cu"
+
 #include <array>
 
 const size_t count = 1280;
 
 std::array<bignum, count> primes;
 std::array<bool  , count> primeTrue;
-
-__global__ void cudaAdder(bignum *a, bignum *b, bignum *c)
-{
-    if (threadIdx.x == 0)
-        add_bignum(a, b, c);
-    sync();
-}
-
-void findAdder(void)
-{
-    bignum a;
-    bignum b;
-    bignum x;
-
-    std::cout << "Sizeof(bignum): " << sizeof(bignum) << std::endl;
-
-    std::cout << "CUDA: " << std::endl;
-    rand_digits_bignum(&a, 610);
-    rand_digits_bignum(&b, 600);
-    initialize_bignum(&x);
-
-    print_bignum(&a);
-    print_bignum(&b);
-
-    bignum *c;
-    bignum *d;
-    bignum *z;
-
-    cudaMalloc((void**)&c, sizeof(bignum));
-    cudaMalloc((void**)&d, sizeof(bignum));
-    cudaMalloc((void**)&z, sizeof(bignum));
-
-    cudaMemcpy(c, &a, sizeof(bignum), cudaMemcpyHostToDevice);
-    cudaMemcpy(d, &b, sizeof(bignum), cudaMemcpyHostToDevice);
-    cudaMemcpy(z, &x, sizeof(bignum), cudaMemcpyHostToDevice);
-
-    cudaAdder<<<1,1>>>(c, d, z);
-
-    cudaMemcpy(&a, c, sizeof(bignum), cudaMemcpyDeviceToHost);
-    cudaMemcpy(&b, d, sizeof(bignum), cudaMemcpyDeviceToHost);
-    cudaMemcpy(&x, z, sizeof(bignum), cudaMemcpyDeviceToHost);
-
-    cudaFree(c);
-    cudaFree(d);
-    cudaFree(z);
-
-    print_bignum(&x);
-
-    std::cout << "CPU: " << std::endl;
-    print_bignum(&a);
-    print_bignum(&b);
-    add_bignum(&a, &b, &x);
-    print_bignum(&x);
-}
 
 __global__ void cudaPrimeFinder(bignum *ps, bool *bs, bignum_stack *stacks)
 {
@@ -118,11 +66,13 @@ int main()
     srand(time(NULL));
     //cudaDeviceSetLimit(cudaLimitMallocHeapSize, 1024 * 1024 * 1024);
     //findAdder();
-    findPrimes();
-    for (int i = 0; i < count; i++) {
-        if (primeTrue[i])
-            print_bignum(&primes[i]);
-    }
+    //findPrimes();
+    //for (int i = 0; i < count; i++) {
+    //    if (primeTrue[i])
+    //        print_bignum(&primes[i]);
+    //}
+
+    find_primes();
 
     return 0;
 

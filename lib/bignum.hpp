@@ -334,7 +334,7 @@ FNC_DH void mod_bignum(bignum *a, bignum *b, bignum *r, bignum_stack *s)
 
 FNC_DH bool even_bignum(bignum *a)
 {
-    return !(a->digits[0] & 1);
+    return (a->digits[0] & 1) == 0;
 }
 
 FNC_H void rand_bignum(bignum *a)

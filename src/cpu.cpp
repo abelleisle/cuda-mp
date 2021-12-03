@@ -26,7 +26,7 @@ int main(void)
     rand_digits_bignum(&p, 15);
 
     print_bignum(&p);
-    if (prime_bignum(&p, &stack)) {
+    if (mr_bignum(&p, 32, &stack)) {
         std::cout << "Number is prime" << std::endl;
     } else {
         std::cout << "Not prime" << std::endl;
