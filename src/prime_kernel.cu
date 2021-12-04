@@ -29,7 +29,6 @@ const unsigned THREADS    = BLOCK_SIZE * GRID_SIZE;
 std::array<cmp::bigint<DIGIT_WIDTH>, GRID_SIZE> local_primes;
 std::array<cmp::bigint<DIGIT_WIDTH>, THREADS>   mr_trials;
 cmp::env<STACK_DEPTH, DIGIT_WIDTH> local_stack;
-//std::array<bignum, THREADS>   mp_stacks;
 
 /******************************************************************************
 *                                 KERNELS                                     *
@@ -123,15 +122,10 @@ __global__ void MR_CUDA(cmp::bigint<N> *primes,
 *                                FUNCTIONS                                    *
 ******************************************************************************/
 
-/*
-function bytesToSize(bytes) {
-   var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-   if (bytes == 0) return '0 Byte';
-   var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
-   return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
-}
-*/
-
+/** @brief Given a number of bytes, print it all pretty like
+ * @param[bytes] - Number of bytes
+ * @return[std::string] - Bytes, but prettified
+ */
 std::string sz(size_t bytes)
 {
     std::string ret;
@@ -151,7 +145,9 @@ std::string sz(size_t bytes)
     return ret;
 }
 
-// TODO: error handle
+/** @brief Find primes using the CUDA GPU.
+ * The parameters can be changed at the top of this file.
+ */
 bool find_primes(void)
 {
     /*********************
@@ -284,6 +280,9 @@ bool find_primes(void)
 
 /*******************************************************************************
 *                      SLOW PRIME (TRIAL DIVISION)                             *
+*******************************************************************************/
+/*******************************************************************************
+*                      DO NOT USE. ONLY FOR DEVELOPMENT                        *
 *******************************************************************************/
 
 template<size_t D, size_t N>
