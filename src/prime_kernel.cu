@@ -7,6 +7,7 @@
 *****************************************************************************/
 
 #include "bignum.hpp"
+#include "bignum_types.hpp"
 #include "bignum_prime.hpp"
 
 #include <array>
@@ -15,15 +16,19 @@
 *                                 GLOBALS                                     *
 ******************************************************************************/
 
-const unsigned RAND_DIGITS = 30;
-const unsigned PRIMES_NUM = 12800;
+#define DIGIT_WIDTH 100
+#define STACK_DEPTH 15
+
+const unsigned RAND_DIGITS = 20;
+const unsigned PRIMES_NUM = 25600;
 const unsigned BLOCK_SIZE = 32;
 const unsigned MR_TRIALS  = BLOCK_SIZE;
 const unsigned GRID_SIZE  = PRIMES_NUM;
 const unsigned THREADS    = BLOCK_SIZE * GRID_SIZE;
 
-std::array<bignum, GRID_SIZE> local_primes;
-std::array<bignum, THREADS>   mr_trials;
+std::array<cmp::bigint<DIGIT_WIDTH>, GRID_SIZE> local_primes;
+std::array<cmp::bigint<DIGIT_WIDTH>, THREADS>   mr_trials;
+cmp::env<STACK_DEPTH, DIGIT_WIDTH> local_stack;
 //std::array<bignum, THREADS>   mp_stacks;
 
 /******************************************************************************
@@ -45,7 +50,10 @@ std::array<bignum, THREADS>   mr_trials;
  * @note This should be run with the same number of threads per block as MR
  *       trials.
  */
-__global__ void MR_CUDA(bignum *primes, bignum *randoms, bignum_stack *stacks)
+template<size_t D, size_t N>
+__global__ void MR_CUDA(cmp::bigint<N> *primes,
+                        cmp::bigint<N> *randoms,
+                        cmp::env<D, N> *stacks)
 {
     auto bid = blockIdx.x;
     auto tid = threadIdx.x + blockDim.x * blockIdx.x;
@@ -55,9 +63,9 @@ __global__ void MR_CUDA(bignum *primes, bignum *randoms, bignum_stack *stacks)
     if (tid >= THREADS)
         return;
 
-    __shared__ bignum *prime;
-               bignum *random      = &randoms[tid];
-               bignum_stack *stack = &stacks[tid];
+    __shared__ cmp::bigint<N> *prime;
+               cmp::bigint<N> *random = &randoms[tid];
+               cmp::env<D, N> *stack  = &stacks[tid];
 
     __shared__ int preprime;
     __shared__ int isnotprime;
@@ -65,7 +73,7 @@ __global__ void MR_CUDA(bignum *primes, bignum *randoms, bignum_stack *stacks)
     stack->sp = 0;
 
     int c = 0; // Factor of d into 2
-    bignum *d = &stack->data[stack->sp++]; // prime factor of 2
+    cmp::bigint<N> *d = &stack->data[stack->sp++]; // prime factor of 2
 
     /******************************
     * PUT PRIME INTO 2^p * d FORM *
@@ -75,12 +83,12 @@ __global__ void MR_CUDA(bignum *primes, bignum *randoms, bignum_stack *stacks)
         isnotprime = 0;
 
         prime = &primes[bid];
-        if (even_bignum(prime))
-            add_i(prime, 1, stack);
-        preprime = mr_bignum_factor(prime, d, &c, stack);
+        if (cmp::even(prime))
+            cmp::add_i(prime, 1, stack);
+        preprime = cmp::mr_factor(prime, d, &c, stack);
 
         if (preprime < 0) {
-            int_to_bignum(0, prime);
+            cmp::to_int(0, prime);
         }
     }
     sync();
@@ -92,13 +100,13 @@ __global__ void MR_CUDA(bignum *primes, bignum *randoms, bignum_stack *stacks)
     /********************
     * REDUCE THE RANDOM *
     ********************/
-    mr_bignum_treatrand(prime, random, stack);
+    cmp::mr_treatrand(prime, random, stack);
     sync();
 
     /**********************************
     * PERFORM THE SINGLE FERMAT TRIAL *
     **********************************/
-    int result = mr_bignum_innerloop(prime, d, c, random, stack);
+    int result = cmp::mr_innerloop(prime, d, c, random, stack);
     if (result == -1)
         atomicAdd(&isnotprime, 1);
     sync();
@@ -107,7 +115,7 @@ __global__ void MR_CUDA(bignum *primes, bignum *randoms, bignum_stack *stacks)
 
     if (threadIdx.x == 0)
         if (isnotprime > 0)
-            int_to_bignum(0, prime);
+            cmp::to_int(0, prime);
     sync();
 }
 
@@ -150,8 +158,8 @@ bool find_primes(void)
     * MEMORY USAGE STATS *
     *********************/
 
-    size_t bignum_sz = sizeof(bignum);
-    size_t bigstack_sz = sizeof(bignum_stack);
+    const size_t bignum_sz = sizeof(cmp::bigint<DIGIT_WIDTH>);
+    const size_t bigstack_sz = sizeof(cmp::env<STACK_DEPTH, DIGIT_WIDTH>);
 
     std::cout << "Memory Usage statistics: " << std::endl;
     std::cout << " - Per Thread: " << sz(bignum_sz + bignum_sz + bigstack_sz) << std::endl;
@@ -176,51 +184,51 @@ bool find_primes(void)
     /* Fill our random prime searches */
     std::cout << "Generating prime attempts..." << std::endl;
     for (auto &r : local_primes)
-        rand_digits_bignum(&r, RAND_DIGITS);
+        cmp::rand_digits(&r, RAND_DIGITS);
 
     /* Fill our random trials */
     std::cout << "Generating prime trials..." << std::endl;
     for (auto &t : mr_trials)
-        rand_digits_bignum(&t, RAND_DIGITS);
+        cmp::rand_digits(&t, RAND_DIGITS);
 
     /***********************
     * ALLOCATE CUDA MEMORY *
     ***********************/
 
-    bignum *cuda_primes;
-    bignum *cuda_trials;
-    bignum_stack *cuda_stacks;
+    cmp::bigint<DIGIT_WIDTH> *cuda_primes;
+    cmp::bigint<DIGIT_WIDTH> *cuda_trials;
+    cmp::env<STACK_DEPTH, DIGIT_WIDTH> *cuda_stacks;
 
     cudaError_t error;
 
     /* Prime number allocation */
-    error = cudaMalloc(&cuda_primes, sizeof(bignum) * PRIMES_NUM); 
+    error = cudaMalloc(&cuda_primes, bignum_sz * PRIMES_NUM); 
     if (error != cudaSuccess) {
         std::cerr << "Unable to allocate CUDA memory for prime storage" << std::endl;
         abort();
     }
     /* Prime trial allocation */
-    error = cudaMalloc(&cuda_trials, sizeof(bignum) * THREADS);
+    error = cudaMalloc(&cuda_trials, bignum_sz * THREADS);
     if (error != cudaSuccess) {
         std::cerr << "Unable to allocate CUDA memory for prime trials" << std::endl;
         cudaFree(cuda_primes); abort();
     }
     /* Thread stack allocations */
-    error = cudaMalloc(&cuda_stacks, sizeof(bignum_stack) * THREADS);
+    error = cudaMalloc(&cuda_stacks, bigstack_sz * THREADS);
     if (error != cudaSuccess) {
         std::cerr << "Unable to allocate CUDA memory for thread stacks" << std::endl;
         cudaFree(cuda_primes); cudaFree(cuda_trials); abort();
     }
 
     error = cudaMemcpy(cuda_primes, local_primes.data(),
-                       sizeof(bignum) * PRIMES_NUM, cudaMemcpyHostToDevice);
+                       bignum_sz * PRIMES_NUM, cudaMemcpyHostToDevice);
     if (error != cudaSuccess) {
         std::cerr << "Unable to copy prime numbers to CUDA memory" << std::endl;
         cudaFree(cuda_primes); cudaFree(cuda_trials); cudaFree(cuda_stacks); abort();
     }
 
     error = cudaMemcpy(cuda_trials, mr_trials.data(),
-                       sizeof(bignum) * THREADS, cudaMemcpyHostToDevice);
+                       bignum_sz * THREADS, cudaMemcpyHostToDevice);
     if (error != cudaSuccess) {
         std::cerr << "Unable to copy trials numbers to CUDA memory" << std::endl;
         cudaFree(cuda_primes); cudaFree(cuda_trials); cudaFree(cuda_stacks); abort();
@@ -232,15 +240,20 @@ bool find_primes(void)
 
     std::cout << "Running kernel" << std::endl;
     cudaDeviceSynchronize();
-    MR_CUDA<<<GRID_SIZE, BLOCK_SIZE>>>(cuda_primes, cuda_trials, cuda_stacks);
+    MR_CUDA<STACK_DEPTH, DIGIT_WIDTH><<<GRID_SIZE, BLOCK_SIZE>>>(cuda_primes, cuda_trials, cuda_stacks);
     cudaDeviceSynchronize();
+    error = cudaGetLastError();
+    if (error != cudaSuccess) {
+        std::cerr << "Kernel execution error..." << std::endl;
+        cudaFree(cuda_primes); cudaFree(cuda_trials); cudaFree(cuda_stacks); abort();
+    }
 
     /***********************
     * COPY AND FREE MEMORY *
     ***********************/
 
     cudaMemcpy(local_primes.data(), cuda_primes,
-               sizeof(bignum) * PRIMES_NUM, cudaMemcpyDeviceToHost);
+               bignum_sz * PRIMES_NUM, cudaMemcpyDeviceToHost);
 
     cudaFree(cuda_primes);
     cudaFree(cuda_trials);
@@ -250,19 +263,71 @@ bool find_primes(void)
     * OUTPUT RESULTS *
     *****************/
 
-    bignum zero;
+    cmp::bigint<DIGIT_WIDTH> *zero = local_stack.push();;
     int primecount = 0;
-    int_to_bignum(0, &zero);
+    cmp::to_int(0, zero);
 
     for (auto &p : local_primes) {
-        if (compare_bignum(&zero, &p) != 0) {
-            print_bignum(&p);
+        if (cmp::compare(zero, &p) != 0) {
+            cmp::print(&p);
             primecount++;
         }
     }
+
+    local_stack.pop();
 
     std::cout << "Found " << primecount << " primes out of " << PRIMES_NUM 
               << " numbers tested." << std::endl;
 
     return true;
+}
+
+/*******************************************************************************
+*                      SLOW PRIME (TRIAL DIVISION)                             *
+*******************************************************************************/
+
+template<size_t D, size_t N>
+__global__ void cudaPrimeFinder(cmp::bigint<N> *ps, bool *bs, cmp::env<D, N> *stacks)
+{
+    auto tid = threadIdx.x + blockIdx.x * blockDim.x + gridDim.x;
+
+    stacks[tid].sp = 0;
+    bs[tid] = prime(&ps[tid], &stacks[tid]);
+
+    sync();
+}
+
+void findPrimes(void)
+{
+    cudaError_t error;
+
+    for (auto &p : local_primes) {
+        cmp::rand_digits(&p, RAND_DIGITS);
+    }
+    
+    cmp::bigint<DIGIT_WIDTH> *ps;
+    cmp::env<STACK_DEPTH, DIGIT_WIDTH> *stacks;
+    bool *bs;
+
+    std::array<bool, THREADS> primeTrue;
+
+    const size_t bignum_sz = sizeof(cmp::bigint<DIGIT_WIDTH>);
+    const size_t bigstack_sz = sizeof(cmp::env<STACK_DEPTH, DIGIT_WIDTH>);
+
+    cudaMalloc((void**)&ps, bignum_sz*local_primes.max_size());
+    cudaMalloc((void**)&bs, sizeof(bool)*primeTrue.max_size());
+    cudaMalloc((void**)&stacks, bigstack_sz*local_primes.max_size());
+
+    cudaMemcpy(ps, local_primes.data(), bignum_sz*local_primes.max_size(), cudaMemcpyHostToDevice);
+    
+    cudaPrimeFinder<<<10, 128>>>(ps, bs, stacks);
+   
+    cudaMemcpy(primeTrue.data(), bs, sizeof(bool)*primeTrue.max_size(), cudaMemcpyDeviceToHost);
+
+    error = cudaGetLastError();
+    printf("Error: %s\n", cudaGetErrorString(error));
+
+    cudaFree(ps);
+    cudaFree(bs);
+    cudaFree(stacks);
 }

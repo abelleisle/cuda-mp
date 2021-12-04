@@ -13,18 +13,23 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <string>
 
 #include "bignum.hpp"
+#include "bignum_types.hpp"
 #include "bignum_prime.hpp"
 
-const unsigned RAND_DIGITS = 30;
-const unsigned PRIMES_NUM = 12800;
+#define DIGIT_WIDTH 1236
+#define STACK_DEPTH 15
+
+const unsigned RAND_DIGITS = 20;
+const unsigned PRIMES_NUM = 25600;
 const unsigned BLOCK_SIZE = 32;
 const unsigned MR_TRIALS  = BLOCK_SIZE;
 const unsigned GRID_SIZE  = PRIMES_NUM;
 const unsigned THREADS    = BLOCK_SIZE * GRID_SIZE;
 
-std::array<bignum, GRID_SIZE> local_primes;
+std::array<cmp::bigint<DIGIT_WIDTH>, GRID_SIZE> local_primes;
 
 std::string sz(size_t bytes)
 {
@@ -48,13 +53,14 @@ std::string sz(size_t bytes)
 bool find_primes(void)
 {
     srand(time(NULL));
+    cmp::env<STACK_DEPTH, DIGIT_WIDTH> stack;
 
     /*********************
     * MEMORY USAGE STATS *
     *********************/
 
-    size_t bignum_sz = sizeof(bignum);
-    size_t bigstack_sz = sizeof(bignum_stack);
+    size_t bignum_sz = sizeof(cmp::bigint<DIGIT_WIDTH>);
+    size_t bigstack_sz = sizeof(cmp::env<STACK_DEPTH, DIGIT_WIDTH>);
 
     std::cout << "Memory Usage statistics: " << std::endl;
     std::cout << " - MP Stack: " << sz(bigstack_sz) << std::endl;
@@ -63,18 +69,20 @@ bool find_primes(void)
 
     /* Fill our random prime searches */
     std::cout << "Generating prime attempts..." << std::endl;
-    for (auto &r : local_primes)
-        rand_digits_bignum(&r, RAND_DIGITS);
+    for (auto &r : local_primes) {
+        cmp::rand_digits(&r, RAND_DIGITS);
+        if (cmp::even(&r))
+            cmp::add_i(&r, 1, &stack);
+    }
 
     /********************
     * KERNEL OPERATIONS *
     ********************/
 
-    bignum_stack stack;
-
+    std::cout << "Running kernel.." << std::endl;
     for (auto &r : local_primes) {
-        if (mr_bignum(&r, 32, &stack)) {
-            print_bignum(&r);
+        if (cmp::mr(&r, 32, &stack)) {
+            cmp::print(&r);
         }
     }
 

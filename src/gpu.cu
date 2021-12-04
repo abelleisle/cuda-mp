@@ -10,6 +10,7 @@
 *****************************************************************************/
 
 #include "bignum.hpp"
+#include "bignum_types.hpp"
 #include "bignum_prime.hpp"
 
 #include "prime_kernel.cu"
@@ -17,51 +18,6 @@
 #include <chrono>
 #include <array>
 #include <functional>
-
-const size_t count = 1280;
-
-std::array<bignum, count> primes;
-std::array<bool  , count> primeTrue;
-
-__global__ void cudaPrimeFinder(bignum *ps, bool *bs, bignum_stack *stacks)
-{
-    auto tid = threadIdx.x + blockIdx.x * blockDim.x + gridDim.x;
-
-    stack_init_bignum(&stacks[tid]);
-    bs[tid] = prime_bignum(&ps[tid], &stacks[tid]);
-
-    sync();
-}
-
-void findPrimes(void)
-{
-    cudaError_t error;
-
-    for (auto &p : primes) {
-        rand_digits_bignum(&p, 10);
-    }
-    
-    bignum *ps;
-    bignum_stack *stacks;
-    bool *bs;
-
-    cudaMalloc((void**)&ps, sizeof(bignum)*primes.max_size());
-    cudaMalloc((void**)&bs, sizeof(bool)*primeTrue.max_size());
-    cudaMalloc((void**)&stacks, sizeof(bignum_stack)*primes.max_size());
-
-    cudaMemcpy(ps, primes.data(), sizeof(bignum)*primes.max_size(), cudaMemcpyHostToDevice);
-    
-    cudaPrimeFinder<<<10, 128>>>(ps, bs, stacks);
-   
-    cudaMemcpy(primeTrue.data(), bs, sizeof(bool)*primeTrue.max_size(), cudaMemcpyDeviceToHost);
-
-    error = cudaGetLastError();
-    printf("Error: %s\n", cudaGetErrorString(error));
-
-    cudaFree(ps);
-    cudaFree(bs);
-    cudaFree(stacks);
-}
 
 int main()
 {
