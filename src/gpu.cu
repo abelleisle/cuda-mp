@@ -43,41 +43,41 @@ int main()
     return 0;
 
     /*
-	int a,b;
-	bignum n1,n2,n3,n4,zero;
+    int a,b;
+    bignum n1,n2,n3,n4,zero;
 
-	while (scanf("%d %d\n",&a,&b) != EOF) {
-		printf("a = %d    b = %d\n",a,b);
-		int_to_bignum(a,&n1);
-		int_to_bignum(b,&n2);
+    while (scanf("%d %d\n",&a,&b) != EOF) {
+        printf("a = %d    b = %d\n",a,b);
+        int_to_bignum(a,&n1);
+        int_to_bignum(b,&n2);
 
-		add_bignum(&n1,&n2,&n3);
-		printf("addition -- ");
-		print_bignum(&n3);
+        add_bignum(&n1,&n2,&n3);
+        printf("addition -- ");
+        print_bignum(&n3);
 
-		printf("compare_bignum a ? b = %d\n",compare_bignum(&n1, &n2));
+        printf("compare_bignum a ? b = %d\n",compare_bignum(&n1, &n2));
 
-		subtract_bignum(&n1,&n2,&n3);
-		printf("subtraction -- ");
-		print_bignum(&n3);
+        subtract_bignum(&n1,&n2,&n3);
+        printf("subtraction -- ");
+        print_bignum(&n3);
 
                 multiply_bignum(&n1,&n2,&n3);
-		printf("multiplication -- ");
+        printf("multiplication -- ");
                 print_bignum(&n3);
 
-		int_to_bignum(0,&zero);
-		if (compare_bignum(&zero, &n2) == 0)
-			printf("division -- NaN \n");
+        int_to_bignum(0,&zero);
+        if (compare_bignum(&zero, &n2) == 0)
+            printf("division -- NaN \n");
                 else {
-			divide_bignum(&n1,&n2,&n3,&n4);
-			printf("division -- ");
-                	print_bignum(&n3);
+            divide_bignum(&n1,&n2,&n3,&n4);
+            printf("division -- ");
+                    print_bignum(&n3);
             printf("remainder -- ");
-                	print_bignum(&n4);
-		}
+                    print_bignum(&n4);
+        }
 
         printf("prime -- %s\n", prime_bignum(&n1) ? "true" : "false");
-		printf("--------------------------\n");
-	}
+        printf("--------------------------\n");
+    }
     */
 }

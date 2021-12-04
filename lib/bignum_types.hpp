@@ -18,7 +18,7 @@ namespace cmp {
 template<size_t N>
 struct bigint {
     uint8_t digits[N]; /** Digit storage */
-	int signbit;       /** 1 is positive, -1 if negative */
+    int signbit;       /** 1 is positive, -1 if negative */
     int lastdigit;     /** Highest order digit index */
 };
 

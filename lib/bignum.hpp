@@ -24,13 +24,13 @@ namespace cmp {
 template<size_t N>
 FNC_H void print(bigint<N> *n)
 {
-	int i;
+    int i;
 
-	if (n->signbit == MINUS) printf("- ");
-	for (i=n->lastdigit; i>=0; i--)
-		printf("%c",'0'+ n->digits[i]);
+    if (n->signbit == MINUS) printf("- ");
+    for (i=n->lastdigit; i>=0; i--)
+        printf("%c",'0'+ n->digits[i]);
 
-	printf("\n");
+    printf("\n");
 }
 
 /** @brief Writes the value of an integer to the bigint
@@ -40,23 +40,23 @@ FNC_H void print(bigint<N> *n)
 template<size_t N>
 FNC_DH void to_int(int s, bigint<N> *n)
 {
-	if (s >= 0) n->signbit = PLUS;
+    if (s >= 0) n->signbit = PLUS;
     else        n->signbit = MINUS;
 
-	for (size_t i = 0; i < N; i++)
+    for (size_t i = 0; i < N; i++)
         n->digits[i] = 0;
 
-	n->lastdigit = -1;
+    n->lastdigit = -1;
 
-	int t = abs(s);
+    int t = abs(s);
 
-	while (t > 0 && n->lastdigit < (int)N) {
-		n->lastdigit ++;
-		n->digits[ n->lastdigit ] = (t % 10);
-		t = t / 10;
-	}
+    while (t > 0 && n->lastdigit < (int)N) {
+        n->lastdigit ++;
+        n->digits[ n->lastdigit ] = (t % 10);
+        t = t / 10;
+    }
 
-	if (s == 0)
+    if (s == 0)
         n->lastdigit = 0;
 }
 
@@ -67,7 +67,7 @@ FNC_DH void to_int(int s, bigint<N> *n)
 template<size_t N>
 FNC_DH void initialize(bigint<N> *n)
 {
-	to_int(0, n);
+    to_int(0, n);
 }
 
 /** @brief Copies one bigint to another 
@@ -91,11 +91,11 @@ FNC_DH void zero_justify(bigint<N> *n)
 {
     if (n->lastdigit >= (int)N) n->lastdigit = N - 1;
 
-	while ((n->lastdigit > 0) && (n->digits[ n->lastdigit ] == 0))
-		n->lastdigit --;
+    while ((n->lastdigit > 0) && (n->digits[ n->lastdigit ] == 0))
+        n->lastdigit --;
 
     if ((n->lastdigit == 0) && (n->digits[0] == 0))
-		n->signbit = PLUS;	/* hack to avoid -0 */
+        n->signbit = PLUS;  /* hack to avoid -0 */
 }
 
 template<size_t N>
@@ -111,34 +111,34 @@ FNC_DH int compare(bigint<N> *a, bigint<N> *b);
 template<size_t N>
 FNC_DH void add(bigint<N> *a, bigint<N> *b, bigint<N> *c)
 {
-	int carry = 0;
+    int carry = 0;
 
-	initialize(c);
+    initialize(c);
 
-	if (a->signbit == b->signbit) c->signbit = a->signbit;
-	else {
-		if (a->signbit == MINUS) {
-			a->signbit = PLUS;
-			subtract(b,a,c);
-			a->signbit = MINUS;
-		} else {
+    if (a->signbit == b->signbit) c->signbit = a->signbit;
+    else {
+        if (a->signbit == MINUS) {
+            a->signbit = PLUS;
+            subtract(b,a,c);
+            a->signbit = MINUS;
+        } else {
             b->signbit = PLUS;
             subtract(a,b,c);
             b->signbit = MINUS;
-		}
-		return;
-	}
+        }
+        return;
+    }
 
-	c->lastdigit = max(a->lastdigit,b->lastdigit)+1;
+    c->lastdigit = max(a->lastdigit,b->lastdigit)+1;
 
     if (c->lastdigit >= (int)N) c->lastdigit = N - 1;
 
-	for (int i=0; i <= (c->lastdigit); i++) {
-		c->digits[i] = (char) (carry+a->digits[i]+b->digits[i]) % 10;
-		carry = (carry + a->digits[i] + b->digits[i]) / 10;
-	}
+    for (int i=0; i <= (c->lastdigit); i++) {
+        c->digits[i] = (char) (carry+a->digits[i]+b->digits[i]) % 10;
+        carry = (carry + a->digits[i] + b->digits[i]) / 10;
+    }
 
-	zero_justify(c);
+    zero_justify(c);
 }
 
 /** @brief Adds an integer value to a bigint. a = a + i
@@ -181,23 +181,23 @@ FNC_DH void add_i(bigint<N> *a, int i, env<D,N>* stack)
 template<size_t N>
 FNC_DH void subtract(bigint<N> *a, bigint<N> *b, bigint<N> *c)
 {
-	int borrow = 0; // Borrow/carry
-	int v; // Placeholder
+    int borrow = 0; // Borrow/carry
+    int v; // Placeholder
 
-	initialize(c);
+    initialize(c);
 
-	if ((a->signbit == MINUS) || (b->signbit == MINUS)) {
+    if ((a->signbit == MINUS) || (b->signbit == MINUS)) {
         b->signbit = -1 * b->signbit;
         add(a,b,c);
         b->signbit = -1 * b->signbit;
-		return;
+        return;
     }
 
-	if (compare(a,b) == PLUS) {
-		subtract(b,a,c);
-		c->signbit = MINUS;
-		return;
-	}
+    if (compare(a,b) == PLUS) {
+        subtract(b,a,c);
+        c->signbit = MINUS;
+        return;
+    }
 
     c->lastdigit = max(a->lastdigit,b->lastdigit);
     if (c->lastdigit >= (int)N)
@@ -215,7 +215,7 @@ FNC_DH void subtract(bigint<N> *a, bigint<N> *b, bigint<N> *c)
         c->digits[i] = (char) v % 10;
     }
 
-	zero_justify(c);
+    zero_justify(c);
 }
 
 /** @brief Compares the value of two bigints. a cmp b
@@ -228,20 +228,20 @@ FNC_DH void subtract(bigint<N> *a, bigint<N> *b, bigint<N> *c)
 template<size_t N>
 FNC_DH int compare(bigint<N> *a, bigint<N> *b)
 {
-	int i;				/* counter */
+    int i;              /* counter */
 
-	if ((a->signbit == MINUS) && (b->signbit == PLUS)) return(PLUS);
-	if ((a->signbit == PLUS) && (b->signbit == MINUS)) return(MINUS);
+    if ((a->signbit == MINUS) && (b->signbit == PLUS)) return(PLUS);
+    if ((a->signbit == PLUS) && (b->signbit == MINUS)) return(MINUS);
 
-	if (b->lastdigit > a->lastdigit) return (PLUS * a->signbit);
-	if (a->lastdigit > b->lastdigit) return (MINUS * a->signbit);
+    if (b->lastdigit > a->lastdigit) return (PLUS * a->signbit);
+    if (a->lastdigit > b->lastdigit) return (MINUS * a->signbit);
 
-	for (i = a->lastdigit; i>=0; i--) {
-		if (a->digits[i] > b->digits[i]) return(MINUS * a->signbit);
-		if (b->digits[i] > a->digits[i]) return(PLUS * a->signbit);
-	}
+    for (i = a->lastdigit; i>=0; i--) {
+        if (a->digits[i] > b->digits[i]) return(MINUS * a->signbit);
+        if (b->digits[i] > a->digits[i]) return(PLUS * a->signbit);
+    }
 
-	return(0);
+    return(0);
 }
 
 
@@ -252,14 +252,14 @@ FNC_DH int compare(bigint<N> *a, bigint<N> *b)
 template<size_t N>
 FNC_DH void digit_shift(bigint<N> *n, int d)
 {
-	if ((n->lastdigit == 0) && (n->digits[0] == 0)) return;
+    if ((n->lastdigit == 0) && (n->digits[0] == 0)) return;
 
-	for (int i = n->lastdigit; i >= 0; i--)
+    for (int i = n->lastdigit; i >= 0; i--)
         n->digits[i+d] = n->digits[i];
 
-	for (int i = 0; i < d; i++) n->digits[i] = 0;
+    for (int i = 0; i < d; i++) n->digits[i] = 0;
 
-	n->lastdigit = n->lastdigit + d;
+    n->lastdigit = n->lastdigit + d;
 }
 
 
@@ -272,24 +272,24 @@ FNC_DH void digit_shift(bigint<N> *n, int d)
 template<size_t D, size_t N>
 FNC_DH void multiply(bigint<N> *a, bigint<N> *b, bigint<N> *c, env<D, N> *s)
 {
-	bigint<N> *row = &s->data[s->sp++];			/* represent shifted row */
-	bigint<N> *tmp = &s->data[s->sp++];			/* placeholder bigint<N> */
+    bigint<N> *row = &s->data[s->sp++];         /* represent shifted row */
+    bigint<N> *tmp = &s->data[s->sp++];         /* placeholder bigint<N> */
 
-	initialize(c);
+    initialize(c);
 
-	*row = *a;
+    *row = *a;
 
-	for (int i = 0; i <= b->lastdigit; i++) {
-		for (int j = 1; j <= b->digits[i]; j++) {
-			add(c,row,tmp);
-			*c = *tmp;
-		}
-		digit_shift(row,1);
-	}
+    for (int i = 0; i <= b->lastdigit; i++) {
+        for (int j = 1; j <= b->digits[i]; j++) {
+            add(c,row,tmp);
+            *c = *tmp;
+        }
+        digit_shift(row,1);
+    }
 
-	c->signbit = a->signbit * b->signbit;
+    c->signbit = a->signbit * b->signbit;
 
-	zero_justify(c);
+    zero_justify(c);
 
     s->sp -= 2;
 }
@@ -308,20 +308,20 @@ FNC_DH void divide(bigint<N> *a, bigint<N> *b, bigint<N> *c, bigint<N> *r, env<D
     bigint<N> *row = &s->data[s->sp++];
     bigint<N> *tmp = &s->data[s->sp++];
 
-	initialize(c);
+    initialize(c);
 
-	c->signbit = a->signbit * b->signbit;
+    c->signbit = a->signbit * b->signbit;
 
-	int asign = a->signbit;
-	int bsign = b->signbit;
+    int asign = a->signbit;
+    int bsign = b->signbit;
 
-	a->signbit = PLUS;
+    a->signbit = PLUS;
     b->signbit = PLUS;
 
-	initialize(row);
-	initialize(tmp);
+    initialize(row);
+    initialize(tmp);
 
-	c->lastdigit = a->lastdigit;
+    c->lastdigit = a->lastdigit;
 
     if (compare(row, b) == 0) {
     // If b == 0
